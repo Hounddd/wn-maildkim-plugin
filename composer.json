@@ -1,0 +1,29 @@
+{
+    "name": "hounddd/wn-maildkim-plugin",
+    "description": "Add support for DKIM-signed outgoing emails in Winter CMS.",
+    "type": "winter-plugin",
+    "homepage": "https://github.com/Hounddd/wn-maildkim-plugin",
+    "keywords": [
+        "winter cms",
+        "winter",
+        "plugin",
+        "email",
+        "dkim",
+        "security"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Hounddd - Damien MATHIEU",
+            "email": "damien@hounddd.fr",
+            "role": "Original Author"
+        }
+    ],
+    "require": {
+        "composer/installers": "^1 || ^2",
+        "symfony/mime": "^6.4 || ^7.0"
+    },
+    "extra": {
+        "installer-name": "maildkim"
+    }
+}
