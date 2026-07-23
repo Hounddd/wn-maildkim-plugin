@@ -8,6 +8,12 @@ use Symfony\Component\Mime\Email;
 
 /**
  * Signs outgoing emails with DKIM when configuration is complete and valid.
+ *
+ * @category Hounddd
+ * @package  Hounddd\MailDkim
+ * @author   Damien Mathieu <damien@hounddd.fr>
+ * @license  MIT https://opensource.org/licenses/MIT
+ * @link     https://github.com/Hounddd/wn-maildkim-plugin
  */
 class DkimMailSigner
 {
@@ -23,7 +29,10 @@ class DkimMailSigner
     protected bool $signerInitialized = false;
 
     /**
-     * @param array<string, mixed> $config
+     * Creates a new DKIM signing service.
+     *
+     * @param array<string, mixed> $config Plugin configuration values.
+     * @param LoggerInterface      $logger Application logger instance.
      */
     public function __construct(array $config, LoggerInterface $logger)
     {
@@ -33,6 +42,10 @@ class DkimMailSigner
 
     /**
      * Signs the given Symfony email in place.
+        *
+        * @param object $email Symfony email candidate.
+        *
+        * @return bool True when a DKIM signature header was added.
      */
     public function signSymfonyEmail(object $email): bool
     {
@@ -55,20 +68,26 @@ class DkimMailSigner
 
             $signed = $email->getHeaders()->has('DKIM-Signature');
             if ($signed && $this->shouldLogSuccess()) {
-                $this->logger->info('DKIM signature applied.', [
-                    'selector' => $this->selector(),
-                    'domain' => $this->resolveDomain(),
-                    'subject' => $email->getSubject(),
-                ]);
+                $this->logger->info(
+                    'DKIM signature applied.',
+                    [
+                        'selector' => $this->selector(),
+                        'domain' => $this->resolveDomain(),
+                        'subject' => $email->getSubject(),
+                    ]
+                );
             }
 
             return $signed;
         } catch (\Throwable $exception) {
-            $this->logger->error('DKIM signing failed. Email will be sent unsigned.', [
-                'exception' => $exception->getMessage(),
-                'selector' => $this->selector(),
-                'domain' => $this->resolveDomain(),
-            ]);
+            $this->logger->error(
+                'DKIM signing failed. Email will be sent unsigned.',
+                [
+                    'exception' => $exception->getMessage(),
+                    'selector' => $this->selector(),
+                    'domain' => $this->resolveDomain(),
+                ]
+            );
 
             return false;
         }
@@ -91,18 +110,24 @@ class DkimMailSigner
         if ($keyPath === '') {
             $issues[] = 'Missing private key path (`DKIM_PRIVATE_KEY`).';
         } elseif (!is_file($keyPath) || !is_readable($keyPath)) {
-            $issues[] = sprintf('Private key file is missing or unreadable: %s', $keyPath);
+            $issues[] = sprintf(
+                'Private key file is missing or unreadable: %s',
+                $keyPath
+            );
         }
 
         if ($this->resolveDomain() === null) {
-            $issues[] = 'Missing domain (`DKIM_DOMAIN`) and app.url fallback is not usable.';
+            $issues[] = 'Missing domain (`DKIM_DOMAIN`) and '
+                . 'app.url fallback is not usable.';
         }
 
         if ($this->selector() === '') {
             $issues[] = 'Selector is empty (`DKIM_SELECTOR`).';
         }
 
-        $algorithm = strtolower(trim((string) ($this->config['algorithm'] ?? 'rsa-sha256')));
+        $algorithm = strtolower(
+            trim((string) ($this->config['algorithm'] ?? 'rsa-sha256'))
+        );
         $allowed = ['rsa-sha256', 'ed25519-sha256'];
         if (!in_array($algorithm, $allowed, true)) {
             $issues[] = sprintf(
@@ -116,6 +141,8 @@ class DkimMailSigner
 
     /**
      * Builds and caches the signer instance.
+        *
+        * @return DkimSigner|null
      */
     protected function getSigner(): ?DkimSigner
     {
@@ -127,22 +154,29 @@ class DkimMailSigner
 
         $keyPath = trim((string) ($this->config['private_key_path'] ?? ''));
         if ($keyPath === '') {
-            $this->logger->warning('DKIM signing is enabled but private_key_path is missing.');
+            $this->logger->warning(
+                'DKIM signing is enabled but private_key_path is missing.'
+            );
 
             return null;
         }
 
         if (!is_file($keyPath) || !is_readable($keyPath)) {
-            $this->logger->warning('DKIM private key file is missing or unreadable.', [
-                'private_key_path' => $keyPath,
-            ]);
+            $this->logger->warning(
+                'DKIM private key file is missing or unreadable.',
+                [
+                    'private_key_path' => $keyPath,
+                ]
+            );
 
             return null;
         }
 
         $domain = $this->resolveDomain();
         if ($domain === null) {
-            $this->logger->warning('DKIM signing is enabled but no valid domain could be resolved.');
+            $this->logger->warning(
+                'DKIM signing is enabled but no valid domain could be resolved.'
+            );
 
             return null;
         }
@@ -156,9 +190,12 @@ class DkimMailSigner
 
         $keyContent = file_get_contents($keyPath);
         if ($keyContent === false || trim($keyContent) === '') {
-            $this->logger->warning('DKIM private key file is empty or unreadable.', [
-                'private_key_path' => $keyPath,
-            ]);
+            $this->logger->warning(
+                'DKIM private key file is empty or unreadable.',
+                [
+                    'private_key_path' => $keyPath,
+                ]
+            );
 
             return null;
         }
@@ -174,11 +211,14 @@ class DkimMailSigner
                 $passphrase
             );
         } catch (\Throwable $exception) {
-            $this->logger->error('DKIM signer could not be created. Emails will be sent unsigned.', [
-                'exception' => $exception->getMessage(),
-                'selector' => $selector,
-                'domain' => $domain,
-            ]);
+            $this->logger->error(
+                'DKIM signer could not be created. Emails will be sent unsigned.',
+                [
+                    'exception' => $exception->getMessage(),
+                    'selector' => $selector,
+                    'domain' => $domain,
+                ]
+            );
 
             return null;
         }
@@ -186,6 +226,11 @@ class DkimMailSigner
         return $this->signer;
     }
 
+    /**
+     * Determines whether DKIM signing is enabled.
+     *
+     * @return bool
+     */
     protected function isEnabled(): bool
     {
         $enabled = $this->config['enabled'] ?? false;
@@ -197,6 +242,11 @@ class DkimMailSigner
         return filter_var($enabled, FILTER_VALIDATE_BOOL) === true;
     }
 
+    /**
+     * Resolves the DKIM domain from config or app URL.
+     *
+     * @return string|null
+     */
     protected function resolveDomain(): ?string
     {
         $configuredDomain = trim((string) ($this->config['domain'] ?? ''));
@@ -217,11 +267,21 @@ class DkimMailSigner
         return $host;
     }
 
+    /**
+     * Returns the configured DKIM selector.
+     *
+     * @return string
+     */
     protected function selector(): string
     {
         return trim((string) ($this->config['selector'] ?? 'dkim'));
     }
 
+    /**
+     * Determines whether successful signatures should be logged.
+     *
+     * @return bool
+     */
     protected function shouldLogSuccess(): bool
     {
         $value = $this->config['log_success'] ?? false;
@@ -234,17 +294,24 @@ class DkimMailSigner
     }
 
     /**
+     * Builds the Symfony signer options array.
+     *
      * @return array<string, mixed>
      */
     protected function resolveSignerOptions(): array
     {
-        $algorithm = strtolower(trim((string) ($this->config['algorithm'] ?? 'rsa-sha256')));
+        $algorithm = strtolower(
+            trim((string) ($this->config['algorithm'] ?? 'rsa-sha256'))
+        );
         $allowed = ['rsa-sha256', 'ed25519-sha256'];
 
         if (!in_array($algorithm, $allowed, true)) {
-            $this->logger->warning('Unsupported DKIM algorithm configured, falling back to rsa-sha256.', [
-                'algorithm' => $algorithm,
-            ]);
+            $this->logger->warning(
+                'Unsupported DKIM algorithm configured, falling back to rsa-sha256.',
+                [
+                    'algorithm' => $algorithm,
+                ]
+            );
 
             $algorithm = 'rsa-sha256';
         }

@@ -1,14 +1,23 @@
-<?php 
+<?php
 
 namespace Hounddd\MailDkim;
 
-use Config;
-use Event;
 use Hounddd\MailDkim\Classes\DkimMailSigner;
 use Hounddd\MailDkim\Console\VerifyDkimSignature;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Psr\Log\LoggerInterface;
 use System\Classes\PluginBase;
 
+/**
+ * Registers the MailDkim plugin services and listeners.
+ *
+ * @category Hounddd
+ * @package  Hounddd\MailDkim
+ * @author   Damien Mathieu <damien@hounddd.fr>
+ * @license  MIT https://opensource.org/licenses/MIT
+ * @link     https://github.com/Hounddd/wn-maildkim-plugin
+ */
 class Plugin extends PluginBase
 {
     /**
@@ -27,33 +36,54 @@ class Plugin extends PluginBase
         ];
     }
 
+    /**
+     * Registers plugin services and console commands.
+     *
+     * @return void
+     */
     public function register(): void
     {
-        $this->app->singleton(DkimMailSigner::class, function ($app) {
-            $logger = $app->make(LoggerInterface::class);
+        $this->app->singleton(
+            DkimMailSigner::class,
+            function ($app) {
+                $logger = $app->make(LoggerInterface::class);
 
-            return new DkimMailSigner(
-                (array) Config::get('hounddd.maildkim::config', []),
-                $logger
-            );
-        });
+                return new DkimMailSigner(
+                    (array) Config::get('hounddd.maildkim::config', []),
+                    $logger
+                );
+            }
+        );
 
         $this->registerConsoleCommand('maildkim.verify', VerifyDkimSignature::class);
     }
 
+    /**
+     * Attaches the send-time mail signing listener.
+     *
+     * @return void
+     */
     public function boot(): void
     {
-        Event::listen('mailer.prepareSend', function ($mailer, $view, $message): void {
-            if (!is_object($message) || !method_exists($message, 'getSymfonyMessage')) {
-                return;
-            }
+        Event::listen(
+            'mailer.prepareSend',
+            function ($mailer, $view, $message): void {
+                if (
+                    !is_object($message)
+                    || !method_exists($message, 'getSymfonyMessage')
+                ) {
+                    return;
+                }
 
-            $symfonyMessage = $message->getSymfonyMessage();
-            if (!is_object($symfonyMessage)) {
-                return;
-            }
+                $symfonyMessage = $message->getSymfonyMessage();
+                if (!is_object($symfonyMessage)) {
+                    return;
+                }
 
-            $this->app->make(DkimMailSigner::class)->signSymfonyEmail($symfonyMessage);
-        });
+                $this->app
+                    ->make(DkimMailSigner::class)
+                    ->signSymfonyEmail($symfonyMessage);
+            }
+        );
     }
 }

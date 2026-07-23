@@ -6,21 +6,39 @@ use Hounddd\MailDkim\Classes\DkimMailSigner;
 use Illuminate\Console\Command;
 use Symfony\Component\Mime\Email;
 
+/**
+ * Verifies that the configured DKIM signer can sign a sample message.
+ *
+ * @category Hounddd
+ * @package  Hounddd\MailDkim
+ * @author   Damien Mathieu <damien@hounddd.fr>
+ * @license  MIT https://opensource.org/licenses/MIT
+ * @link     https://github.com/Hounddd/wn-maildkim-plugin
+ */
 class VerifyDkimSignature extends Command
 {
     /**
+     * Command name.
+     *
      * @var string
      */
     protected $name = 'maildkim:verify';
 
     /**
+     * Command description.
+     *
      * @var string
      */
-    protected $description = 'Verifies that DKIM signing configuration can sign a sample email.';
+    protected $description = 'Verifies DKIM signing on a sample email.';
 
+    /**
+     * Runs the DKIM verification command.
+     *
+     * @return int
+     */
     public function handle(): int
     {
-        /** @var DkimMailSigner $signer */
+        /* @var DkimMailSigner $signer */
         $signer = $this->laravel->make(DkimMailSigner::class);
 
         $issues = $signer->getConfigurationIssues();
@@ -30,7 +48,10 @@ class VerifyDkimSignature extends Command
                 $this->line('- ' . $issue);
             }
 
-            $this->line('Tip: update your .env values then clear config cache (`php artisan config:clear`).');
+            $this->line(
+                'Tip: update your .env values then clear config cache '
+                . '(`php artisan config:clear`).'
+            );
 
             return 1;
         }
@@ -43,7 +64,7 @@ class VerifyDkimSignature extends Command
 
         if (!$signer->signSymfonyEmail($email)) {
             $this->error('DKIM signature was not applied.');
-            $this->line('Check runtime signing errors in: ' . $this->describeLogTargets());
+            $this->line('Check your Winter site logs for runtime signing errors.');
 
             return 1;
         }
@@ -56,33 +77,5 @@ class VerifyDkimSignature extends Command
         }
 
         return 0;
-    }
-
-    protected function describeLogTargets(): string
-    {
-        $defaultChannel = (string) config('logging.default', 'single');
-        $paths = [];
-
-        $defaultPath = config('logging.channels.' . $defaultChannel . '.path');
-        if (is_string($defaultPath) && trim($defaultPath) !== '') {
-            $paths[] = $defaultPath;
-        }
-
-        if ($defaultChannel === 'stack') {
-            $channels = (array) config('logging.channels.stack.channels', []);
-            foreach ($channels as $channel) {
-                $path = config('logging.channels.' . $channel . '.path');
-                if (is_string($path) && trim($path) !== '') {
-                    $paths[] = $path;
-                }
-            }
-        }
-
-        $paths = array_values(array_unique(array_filter($paths)));
-        if (empty($paths)) {
-            return 'default logger channel `' . $defaultChannel . '` (no explicit file path configured)';
-        }
-
-        return implode(', ', $paths);
     }
 }
