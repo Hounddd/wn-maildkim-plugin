@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Psr\Log\LoggerInterface;
 use System\Classes\PluginBase;
+use System\Classes\SettingsManager;
 
 /**
  * Registers the MailDkim plugin services and listeners.
@@ -38,6 +39,26 @@ class Plugin extends PluginBase
             'author'      => 'Hounddd',
             'icon'        => 'icon-envelope',
             'homepage'    => 'https://github.com/Hounddd/wn-maildkim-plugin',
+        ];
+    }
+
+    /**
+     * Registers the settings page used for DKIM diagnostics.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function registerSettings(): array
+    {
+        return [
+            'settings' => [
+                'label' => 'hounddd.maildkim::lang.models.settings.label',
+                'description' => 'hounddd.maildkim::lang.models.settings.description',
+                'category' => SettingsManager::CATEGORY_MAIL,
+                'icon' => 'icon-envelope-o',
+                'class' => 'Hounddd\MailDkim\Models\Settings',
+                'order' => 5000,
+                'keywords' => 'mail dkim dns diagnostics email',
+            ],
         ];
     }
 

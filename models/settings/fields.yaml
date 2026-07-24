@@ -1,0 +1,4 @@
+fields:
+    diagnostics:
+        type: partial
+        path: $/hounddd/maildkim/models/settings/_diagnostics.htm

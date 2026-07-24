@@ -159,6 +159,17 @@ If DKIM_DOMAIN is not set, the plugin falls back to the host from app.url.
 - If configuration is incomplete or signing fails, emails are still sent unsigned.
 - Failures are logged for visibility.
 
+## Backend diagnostics page
+
+The plugin also provides a Winter CMS settings page that displays:
+
+- configuration issues
+- sample signature result (without sending a real email)
+- DKIM DNS lookup result
+- generated DNS TXT value and derived public key
+
+Open the backend settings page for Mail DKIM to review these diagnostics in one place.
+
 ## Available commands
 
 All commands return exit code `0` on success and `1` on failure.

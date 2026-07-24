@@ -1,0 +1,156 @@
+<?php
+/**
+ * Set the correct model
+ */
+$settingsModel = null;
+if (isset($model) && is_object($model)) {
+    $settingsModel = $model;
+} elseif (isset($formModel) && is_object($formModel)) {
+    $settingsModel = $formModel;
+}
+
+if ($settingsModel === null || !method_exists($settingsModel, 'getDiagnostics')) {
+    return;
+}
+
+// Get the diagnostics data from the model
+$diagnostics = $settingsModel->getDiagnostics();
+
+// Set the language prefix for translations
+$langPrefix = 'hounddd.maildkim::lang.models.settings.diagnostics.';
+
+/**
+ * Helper functions to determine the status class and label based on the diagnostics results
+ * 
+ * @param bool $ok
+ * @return string
+ */
+$statusClass = static function (bool $ok): string 
+{
+    return $ok ? 'callout-success' : 'callout-danger';
+};
+
+/**
+ * Helper function to get the status label based on the diagnostics results
+ * 
+ * @param bool $ok
+ * @return string
+ */
+$statusLabel = static function (bool $ok) use ($langPrefix): string 
+{
+    return $ok
+        ? trans($langPrefix . 'status.ok')
+        : trans($langPrefix . 'status.check_required');
+};
+
+// Extract the individual diagnostics sections for easier access
+$configuration = $diagnostics['configuration'];
+$signature     = $diagnostics['signature'];
+$dns           = $diagnostics['dns'];
+$materials     = $diagnostics['materials'];
+?>
+
+<div class="callout callout-info no-subheader">
+    <div class="header">
+        <i class="icon-stethoscope"></i>
+        <h3><?= e(trans($langPrefix . 'overview.title')) ?></h3>
+        <p><?= e(trans($langPrefix . 'overview.recalculated')) ?></p>
+    </div>
+    <div class="content">
+        <p><strong><?= e(trans($langPrefix . 'overview.generated_at')) ?></strong> <?= e($diagnostics['generated_at']) ?></p>
+        <p><strong><?= e(trans($langPrefix . 'overview.recommended_cli')) ?></strong> <span style="display:inline-block; vertical-align: top;"><code>php artisan maildkim:signature-check</code>, <br /><code>php artisan maildkim:dns-check</code>, <br /><code>php artisan maildkim:dns-record</code>, <br /><code>php artisan maildkim:doctor</code></span></p>
+    </div>
+</div>
+
+<div class="callout m-t <?= $statusClass((bool) $configuration['ok']) ?> no-subheader">
+    <div class="header">
+        <i class="icon-cog"></i>
+        <h3><?= e(trans($langPrefix . 'configuration.title')) ?></h3>
+        <p><?= e($statusLabel((bool) $configuration['ok'])) ?></p>
+    </div>
+    <div class="content">
+        <p><strong><?= e(trans($langPrefix . 'configuration.domain')) ?></strong> <?= e((string) ($configuration['domain'] ?: trans($langPrefix . 'general.not_resolved'))) ?></p>
+        <p><strong><?= e(trans($langPrefix . 'configuration.selector')) ?></strong> <?= e((string) ($configuration['selector'] ?: trans($langPrefix . 'general.not_configured'))) ?></p>
+        <p><strong><?= e(trans($langPrefix . 'configuration.dns_host')) ?></strong> <?= e((string) ($configuration['dns_host'] ?: trans($langPrefix . 'general.not_available'))) ?></p>
+        <p><strong><?= e(trans($langPrefix . 'configuration.private_key_path')) ?></strong> <?= e((string) ($configuration['private_key_path'] ?: trans($langPrefix . 'general.not_configured'))) ?></p>
+
+        <?php if (!empty($configuration['issues'])): ?>
+            <ul>
+                <?php foreach ($configuration['issues'] as $issue): ?>
+                    <li><?= e($issue) ?></li>
+                <?php endforeach ?>
+            </ul>
+        <?php else: ?>
+            <p><?= e(trans($langPrefix . 'configuration.no_issue')) ?></p>
+        <?php endif ?>
+    </div>
+</div>
+
+<div class="callout m-t <?= $statusClass((bool) $signature['ok']) ?> no-subheader">
+    <div class="header">
+        <i class="icon-signature"></i>
+        <h3><?= e(trans($langPrefix . 'signature.title')) ?></h3>
+        <p><?= e($statusLabel((bool) $signature['ok'])) ?></p>
+    </div>
+    <div class="content">
+        <p><strong><?= e(trans($langPrefix . 'general.message')) ?></strong> <?= e((string) $signature['message']) ?></p>
+
+        <?php if (!empty($signature['header'])): ?>
+            <p><strong><?= e(trans($langPrefix . 'signature.header_label')) ?></strong></p>
+            <textarea class="form-control" rows="6" readonly><?= e($signature['header']) ?></textarea>
+        <?php endif ?>
+    </div>
+</div>
+
+<div class="callout m-t <?= $statusClass((bool) $dns['ok']) ?> no-subheader">
+    <div class="header">
+        <i class="icon-globe"></i>
+        <h3><?= e(trans($langPrefix . 'dns.title')) ?></h3>
+        <p><?= e($statusLabel((bool) $dns['ok'])) ?></p>
+    </div>
+    <div class="content">
+        <p><strong><?= e(trans($langPrefix . 'general.message')) ?></strong> <?= e((string) $dns['message']) ?></p>
+
+        <?php if (!empty($dns['host'])): ?>
+            <p><strong><?= e(trans($langPrefix . 'dns.lookup_host')) ?></strong> <?= e($dns['host']) ?></p>
+        <?php endif ?>
+
+        <?php if (!empty($dns['records'])): ?>
+            <p><strong><?= e(trans($langPrefix . 'dns.txt_records')) ?></strong></p>
+            <ul>
+                <?php foreach ($dns['records'] as $record): ?>
+                    <li><code><?= e($record) ?></code></li>
+                <?php endforeach ?>
+            </ul>
+        <?php endif ?>
+
+        <?php if ($dns['public_key_matches'] === true): ?>
+            <p><strong><?= e(trans($langPrefix . 'dns.public_key_match')) ?></strong> <?= e(trans($langPrefix . 'dns.public_key_match_yes')) ?></p>
+        <?php elseif ($dns['public_key_matches'] === false): ?>
+            <p><strong><?= e(trans($langPrefix . 'dns.public_key_match')) ?></strong> <?= e(trans($langPrefix . 'dns.public_key_match_no')) ?></p>
+        <?php else: ?>
+            <p><strong><?= e(trans($langPrefix . 'dns.public_key_match')) ?></strong> <?= e(trans($langPrefix . 'dns.public_key_match_unknown')) ?></p>
+        <?php endif ?>
+    </div>
+</div>
+
+<div class="callout m-t callout-info no-subheader">
+    <div class="header">
+        <i class="icon-key"></i>
+        <h3><?= e(trans($langPrefix . 'materials.title')) ?></h3>
+        <p><?= e(trans($langPrefix . 'materials.description')) ?></p>
+    </div>
+    <div class="content">
+        <?php if (!empty($materials['dns_record_value'])): ?>
+            <p><strong><?= e(trans($langPrefix . 'materials.txt_value')) ?></strong></p>
+            <textarea class="form-control" rows="5" readonly><?= e($materials['dns_record_value']) ?></textarea>
+        <?php else: ?>
+            <p><?= e(trans($langPrefix . 'materials.txt_unavailable')) ?></p>
+        <?php endif ?>
+
+        <?php if (!empty($materials['public_key_pem'])): ?>
+            <p><strong><?= e(trans($langPrefix . 'materials.public_key_pem')) ?></strong></p>
+            <textarea class="form-control" rows="8" readonly><?= e($materials['public_key_pem']) ?></textarea>
+        <?php endif ?>
+    </div>
+</div>
