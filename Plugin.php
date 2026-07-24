@@ -2,8 +2,13 @@
 
 namespace Hounddd\MailDkim;
 
+use Hounddd\MailDkim\Classes\DkimDiagnostics;
 use Hounddd\MailDkim\Classes\DkimMailSigner;
-use Hounddd\MailDkim\Console\VerifyDkimSignature;
+use Hounddd\MailDkim\Console\CheckDkimDns;
+use Hounddd\MailDkim\Console\CheckDkimSignature;
+use Hounddd\MailDkim\Console\DoctorDkim;
+use Hounddd\MailDkim\Console\SendDkimTestEmail;
+use Hounddd\MailDkim\Console\ShowDkimDnsRecord;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Psr\Log\LoggerInterface;
@@ -55,7 +60,21 @@ class Plugin extends PluginBase
             }
         );
 
-        $this->registerConsoleCommand('maildkim.verify', VerifyDkimSignature::class);
+        $this->app->singleton(
+            DkimDiagnostics::class,
+            function ($app) {
+                return new DkimDiagnostics(
+                    (array) Config::get('hounddd.maildkim::config', []),
+                    $app->make(DkimMailSigner::class)
+                );
+            }
+        );
+
+        $this->registerConsoleCommand('maildkim.signature_check', CheckDkimSignature::class);
+        $this->registerConsoleCommand('maildkim.dns_check', CheckDkimDns::class);
+        $this->registerConsoleCommand('maildkim.dns_record', ShowDkimDnsRecord::class);
+        $this->registerConsoleCommand('maildkim.send_test', SendDkimTestEmail::class);
+        $this->registerConsoleCommand('maildkim.doctor', DoctorDkim::class);
     }
 
     /**

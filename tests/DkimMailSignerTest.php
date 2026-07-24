@@ -104,12 +104,16 @@ class DkimMailSignerTest extends TestCase
             'private_key_bits' => 2048,
         ]);
 
-        $this->assertNotFalse($resource, 'Unable to generate an RSA private key for tests.');
+        if ($resource === false) {
+            $this->markTestSkipped('OpenSSL is available but cannot generate RSA keys in this environment.');
+        }
 
         $privateKey = '';
         $exported = openssl_pkey_export($resource, $privateKey);
 
-        $this->assertTrue($exported, 'Unable to export generated RSA private key for tests.');
+        if ($exported !== true) {
+            $this->markTestSkipped('OpenSSL generated a key resource but could not export it in this environment.');
+        }
 
         return $privateKey;
     }

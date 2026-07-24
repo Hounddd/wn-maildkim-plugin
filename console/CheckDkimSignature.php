@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Mime\Email;
 
 /**
- * Verifies that the configured DKIM signer can sign a sample message.
+ * Checks that the configured DKIM signer can sign a sample message.
  *
  * @category Hounddd
  * @package  Hounddd\MailDkim
@@ -15,24 +15,24 @@ use Symfony\Component\Mime\Email;
  * @license  MIT https://opensource.org/licenses/MIT
  * @link     https://github.com/Hounddd/wn-maildkim-plugin
  */
-class VerifyDkimSignature extends Command
+class CheckDkimSignature extends Command
 {
     /**
      * Command name.
      *
      * @var string
      */
-    protected $name = 'maildkim:verify';
+    protected $name = 'maildkim:signature-check';
 
     /**
      * Command description.
      *
      * @var string
      */
-    protected $description = 'Verifies DKIM signing on a sample email.';
+    protected $description = 'Checks DKIM signature generation on a sample email.';
 
     /**
-     * Runs the DKIM verification command.
+     * Runs the DKIM signature check command.
      *
      * @return int
      */

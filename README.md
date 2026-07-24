@@ -159,18 +159,70 @@ If DKIM_DOMAIN is not set, the plugin falls back to the host from app.url.
 - If configuration is incomplete or signing fails, emails are still sent unsigned.
 - Failures are logged for visibility.
 
-### Logging convention
+## Available commands
+
+All commands return exit code `0` on success and `1` on failure.
+
+### Signature check (local, no send)
+
+Verifies that the current configuration can sign a sample email without sending real mail:
+
+`php artisan maildkim:signature-check`
+
+### DNS configuration check
+
+Checks DKIM DNS TXT record for configured selector/domain:
+
+`php artisan maildkim:dns-check`
+
+Optional overrides:
+
+`php artisan maildkim:dns-check --selector=dkim --domain=example.com`
+
+This command also compares the DNS `p=` key with the public key derived from your configured private key (when readable).
+
+### DNS record generation
+
+Builds the DKIM public key record to publish from the configured private key:
+
+`php artisan maildkim:dns-record`
+
+Useful variants:
+
+`php artisan maildkim:dns-record --raw`
+
+`php artisan maildkim:dns-record --pem`
+
+`php artisan maildkim:dns-record --selector=dkim --domain=example.com`
+
+Use `--raw` when you only need the TXT value, and `--pem` for debugging or manual inspection of the derived public key.
+
+### Send test email (real transport)
+
+Sends a real test email using the configured mail transport:
+
+`php artisan maildkim:send-test recipient@example.com`
+
+Optional sender and subject:
+
+`php artisan maildkim:send-test recipient@example.com --from=noreply@example.com --subject="DKIM test"`
+
+Use this command for end-to-end validation (transport + signing at send time).
+
+### Global DKIM diagnostic
+
+Runs configuration, signature, and DNS checks in one command:
+
+`php artisan maildkim:doctor`
+
+Optional hints:
+
+`php artisan maildkim:doctor --domain=example.com --selector=dkim --to=recipient@example.com`
+
+## Logging convention
 
 - Service classes use PSR-3 logger injection (`Psr\Log\LoggerInterface`) instead of the `Log` facade.
 - This keeps the signing service framework-agnostic, easier to unit test, and still fully compatible with Winter's logger container binding.
-
-## Verification command
-
-Run the command below to verify that the current configuration can sign a sample email without sending real mail:
-
-`php artisan maildkim:verify`
-
-The command exits with code 0 on success and 1 on failure.
 
 ## License
 
