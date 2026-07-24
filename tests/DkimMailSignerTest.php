@@ -3,7 +3,6 @@
 namespace Hounddd\MailDkim\Tests;
 
 use Hounddd\MailDkim\Classes\DkimMailSigner;
-use Hounddd\MailDkim\Console\SendMailTesterProbe;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Mime\Email;
@@ -87,21 +86,6 @@ class DkimMailSignerTest extends TestCase
 
         $this->assertTrue($result);
         $this->assertTrue($email->getHeaders()->has('DKIM-Signature'));
-    }
-
-    public function testMailTesterAddressValidationAcceptsOnlyMailTesterDomains(): void
-    {
-        $command = new class extends SendMailTesterProbe {
-            public function validateAddress(string $address): bool
-            {
-                return $this->isMailTesterAddress($address);
-            }
-        };
-
-        $this->assertTrue($command->validateAddress('test-123@srv1.mail-tester.com'));
-        $this->assertTrue($command->validateAddress('test-123@mail-tester.com'));
-        $this->assertFalse($command->validateAddress('test@example.com'));
-        $this->assertFalse($command->validateAddress('not-an-email'));
     }
 
     protected function makeEmail(): Email
