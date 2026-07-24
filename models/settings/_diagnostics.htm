@@ -119,7 +119,7 @@ $materials     = $diagnostics['materials'];
             <p><strong><?= e(trans($langPrefix . 'dns.txt_records')) ?></strong></p>
             <ul>
                 <?php foreach ($dns['records'] as $record): ?>
-                    <li><code><?= e($record) ?></code></li>
+                    <li><code style="max-width:100%;display:inline-block;overflow-x: auto;vertical-align:top;"><?= e($record) ?></code></li>
                 <?php endforeach ?>
             </ul>
         <?php endif ?>
